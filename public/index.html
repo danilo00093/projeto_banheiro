@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle de Banheiro</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #status {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+        #toggleButton {
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border: none;
+            cursor: pointer;
+        }
+        #toggleButton.occupied {
+            background-color: red;
+            color: white;
+        }
+        #toggleButton.available {
+            background-color: green;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Controle de Banheiro</h1>
+    <p id="status">O banheiro está disponível.</p>
+    <input type="text" id="username" placeholder="Digite seu nome" />
+    <button id="toggleButton" class="available">Marcar como Ocupado</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const statusEl = document.getElementById('status');
+        const toggleButton = document.getElementById('toggleButton');
+        const usernameInput = document.getElementById('username');
+
+        let isOccupied = false;
+
+        // Atualiza o estado inicial com base no servidor
+        socket.on('statusUpdate', (data) => {
+            isOccupied = data.occupied;
+            updateUI(data);
+        });
+
+        // Atualiza o botão e o status na tela
+        function updateUI(data) {
+            if (data.occupied) {
+                statusEl.textContent = `O banheiro está ocupado por ${data.user}.`;
+                toggleButton.textContent = 'Liberar o Banheiro';
+                toggleButton.className = 'occupied';
+            } else {
+                statusEl.textContent = 'O banheiro está disponível.';
+                toggleButton.textContent = 'Marcar como Ocupado';
+                toggleButton.className = 'available';
+            }
+        }
+
+        // Envia a atualização de status ao servidor
+        toggleButton.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            if (!isOccupied && username === '') {
+                alert('Por favor, digite seu nome antes de marcar como ocupado.');
+                return;
+            }
+
+            isOccupied = !isOccupied;
+            socket.emit('updateStatus', {
+                occupied: isOccupied,
+                user: isOccupied ? username : ''
+            });
+        });
+    </script>
+</body>
+</html>
